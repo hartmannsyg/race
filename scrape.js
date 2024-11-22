@@ -34,12 +34,16 @@ async function fetchLB(race) {
         return obj.scoreParts[0].score;
     });
 
+    const scores2 = lb2.map((obj) => {
+        return obj.scoreParts[0].score;
+    });
+
     const text = await fs.readFileSync('scores.json', 'utf-8');
     const past = JSON.parse(text);
     
     const minutes = Math.round((Date.now() - start) / 60000)
 
-    past.push([minutes, scores]);
+    past.push([minutes, scores.concat(scores2)]);
         
     await fs.writeFileSync('scores.json', JSON.stringify(past));
     
