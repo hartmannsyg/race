@@ -18,15 +18,21 @@ async function fetchURL(url, attempts = 0) {
     }
 }
 
+let fetchRaceIntervalID = null;
+let fetchLeaderboardIntervalID = null;
+
 async function fetchLB(race) {
     
     const { start, leaderboard, end } = race
 
     if (Date.now() < start) return;
-    if (Date.now() > end) return;
+    if (Date.now() > end) {
+        clearInterval(fetchLeaderboardIntervalID)
+        fetchRaceIntervalID = setInterval(fetchRaces, 10*60*1000);
+    };
 
-    const lb = fetch(leaderboard)
-    const lb2 = fetch(leaderboard + '?page=2')
+    const lb = fetchURL(leaderboard)
+    const lb2 = fetchURL(leaderboard + '?page=2')
 
     if (!lb || !lb2) return; // RIP
     
@@ -49,12 +55,17 @@ async function fetchLB(race) {
     
     // console.log("Data stored:", scores);
 }
-async function main() {
-    const races = await fetchURL(atob('aHR0cHM6Ly9kYXRhLm5pbmpha2l3aS5jb20vYnRkNi9yYWNlcw'))
 
+async function fetchRaces() {
+    const races = await fetchURL(atob('aHR0cHM6Ly9kYXRhLm5pbmpha2l3aS5jb20vYnRkNi9yYWNlcw'));
     if (!races) console.error(`[${Date.now()}] OH FUCK FAILED TO FETCH RACES`)
 
-    // Schedule the fetch every minute (60000 milliseconds)
-    const fetchLeaderboardIntervalID = setInterval(fetchLB, 60000, races[0]);
+    if (races[0].start > Date.now()) {
+        // found a race
+        clearInterval(fetchRaceIntervalID);
+        fs.writeFileSync(`${races[0].id}.json`, '[]')
+        fetchLeaderboardIntervalID = setInterval(fetchLB, 60*1000, races[0])
+    }
 }
-main() 
+
+fetchRaceIntervalID = setInterval(fetchRaces, 10*60*1000);
